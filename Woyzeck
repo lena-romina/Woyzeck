@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Woyzeck – Sprich mit den Figuren</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: #0d0a06; color: #e2d5b8; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  .header { width: 100%; background: #1a1208; padding: 1.6rem 1.2rem 1.2rem; text-align: center; border-bottom: 1px solid #2e2416; }
+  .header-eyebrow { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: #c9a84c; margin-bottom: 0.5rem; }
+  .header h1 { font-size: 2rem; font-weight: normal; color: #c9a84c; margin-bottom: 0.3rem; }
+  .header p { font-size: 0.82rem; color: #7a6e58; font-style: italic; }
+  .char-scroll-wrapper { width: 100%; overflow-x: auto; background: #150f07; border-bottom: 1px solid #2e2416; padding: 0.8rem 1rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .char-scroll-wrapper::-webkit-scrollbar { display: none; }
+  .char-list { display: flex; gap: 0.6rem; width: max-content; }
+  .char-card { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 1rem 0.55rem 0.55rem; border-radius: 50px; border: 1px solid #2e2416; background: #1a1208; cursor: pointer; transition: all 0.2s; white-space: nowrap; user-select: none; }
+  .char-card:hover { border-color: #c9a84c55; }
+  .char-card.active { border-color: #c9a84c; background: #241c0a; }
+  .char-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold; flex-shrink: 0; position: relative; }
+  .char-avatar .dot { position: absolute; top: 1px; right: 1px; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid #150f07; }
+  .char-info { display: flex; flex-direction: column; line-height: 1.3; }
+  .char-name-label { font-size: 0.88rem; color: #e2d5b8; font-weight: bold; }
+  .char-role-label { font-size: 0.68rem; color: #7a6e58; }
+  .tabs { width: 100%; max-width: 680px; display: flex; border-bottom: 1px solid #2e2416; background: #150f07; }
+  .tab-btn { flex: 1; padding: 0.9rem; font-family: 'Georgia', serif; font-size: 0.85rem; color: #7a6e58; background: transparent; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em; }
+  .tab-btn.active { color: #c9a84c; border-bottom-color: #c9a84c; }
+  .content { width: 100%; max-width: 680px; flex: 1; display: flex; flex-direction: column; }
+  .q-panel { padding: 1rem; display: none; flex-direction: column; gap: 0.5rem; }
+  .q-panel.visible { display: flex; }
+  .q-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .q-chip { font-family: 'Georgia', serif; font-size: 0.82rem; font-style: italic; padding: 6px 14px; border-radius: 50px; border: 1px solid #2e2416; background: #1a1208; color: #b8a880; cursor: pointer; transition: all 0.15s; }
+  .q-chip:hover { border-color: #c9a84c77; color: #c9a84c; background: #1e1810; }
+  .chat-panel { display: none; flex-direction: column; flex: 1; }
+  .chat-panel.visible { display: flex; }
+  #chatContainer { flex: 1; display: flex; flex-direction: column; }
+  .chat-box { flex: 1; min-height: 300px; max-height: 460px; overflow-y: auto; padding: 1.1rem; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
+  .chat-box::-webkit-scrollbar { width: 3px; }
+  .chat-box::-webkit-scrollbar-thumb { background: #2e2416; border-radius: 2px; }
+  .chat-placeholder { text-align: center; font-style: italic; font-size: 0.85rem; color: #3a3020; padding: 3rem 2rem; line-height: 1.9; }
+  .msg { display: flex; gap: 9px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; }
+  .msg-body { display: flex; flex-direction: column; max-width: 80%; }
+  .msg-sender { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: #5a5040; margin-bottom: 3px; }
+  .msg.user .msg-sender { text-align: right; }
+  .msg-bubble { padding: 9px 13px; font-size: 0.87rem; line-height: 1.75; border-radius: 4px; border: 1px solid #2e2416; }
+  .msg.char .msg-bubble { background: #1a1610; color: #d4c8aa; }
+  .msg.user .msg-bubble { background: #150f07; color: #7a6e58; font-style: italic; border-color: #1e1810; }
+  .loading-dots { display: flex; gap: 4px; align-items: center; padding: 6px 0; }
+  .loading-dots span { width: 5px; height: 5px; border-radius: 50%; background: #5a5040; animation: blink 1.3s infinite; }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.15} 40%{opacity:1} }
+  .input-bar { display: flex; gap: 8px; padding: 0.85rem 1rem; border-top: 1px solid #2e2416; background: #150f07; }
+  .input-bar input { flex: 1; background: #1a1208; border: 1px solid #2e2416; color: #d4c8aa; font-family: 'Georgia', serif; font-size: 0.87rem; font-style: italic; padding: 9px 13px; border-radius: 50px; outline: none; }
+  .input-bar input::placeholder { color: #3a3020; }
+  .input-bar input:focus { border-color: #c9a84c55; }
+  .send-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid #c9a84c66; background: transparent; color: #c9a84c; font-size: 1.1rem; cursor: pointer; d
